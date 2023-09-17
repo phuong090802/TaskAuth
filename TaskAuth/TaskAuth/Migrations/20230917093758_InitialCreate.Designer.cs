@@ -12,7 +12,7 @@ using TaskAuth.Entities;
 namespace TaskAuth.Migrations
 {
     [DbContext(typeof(TaskAuthContext))]
-    [Migration("20230908140940_InitialCreate")]
+    [Migration("20230917093758_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskAuth.Entities
 {
-    [Table("RefreshTokens")]
+    // [Table("RefreshTokens")]
     public class RefreshToken
     {
         [Key]

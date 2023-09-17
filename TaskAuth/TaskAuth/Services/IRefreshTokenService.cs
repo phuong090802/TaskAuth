@@ -8,7 +8,7 @@ namespace TaskAuth.Services
         Task UpdateRefreshToken(RefreshToken token);
         Task<RefreshToken> GetRefreshTokenById(int? Id);
         Task DisuseChildrenRefreshTokenByParentId(int? Id);
-        Task<RefreshToken> GetRefreshTokenByValue(string? Token);
+        Task<RefreshToken?> GetRefreshTokenByValue(string? Token);
         Task RevokeChildrenRefreshTokenByParentId(int? Id);
         Task DeleteChildrenRefreshTokenByParentId(int? Id);
 

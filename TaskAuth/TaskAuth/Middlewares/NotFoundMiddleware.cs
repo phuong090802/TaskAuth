@@ -1,33 +1,46 @@
-﻿public class NotFoundMiddleware
+﻿namespace TaskAuth.Middlewares
 {
-    private readonly RequestDelegate _next;
-
-    public NotFoundMiddleware(RequestDelegate next)
+    // You may need to install the Microsoft.AspNetCore.Http.Abstractions package into your project
+    public class NotFoundMiddleware
     {
-        _next = next;
+        private readonly RequestDelegate _next;
+
+        public NotFoundMiddleware(RequestDelegate next)
+        {
+            _next = next;
+        }
+
+        public async Task Invoke(HttpContext httpContext)
+        {
+            await _next(httpContext);
+            if (httpContext.Response.StatusCode == 405)
+            {
+                httpContext.Response.ContentType = "text/html";
+
+                string template = $@"
+                 <!DOCTYPE html>
+                 <html lang='en'>
+                 <head>
+                     <meta charset='utf-8'>
+                     <title>Error</title>
+                 </head>
+                 <body>
+                     <pre>Cannot POST {httpContext.Request.Path}</pre>
+                 </body>
+                 </html>";
+                await httpContext.Response.WriteAsync(template);
+            }
+
+        }
+
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    // Extension method used to add the middleware to the HTTP request pipeline.
+    public static class NotFoundMiddlewareExtensions
     {
-        await _next(context);
-
-        if (context.Response.StatusCode == 404)
+        public static IApplicationBuilder UseNotFoundMiddleware(this IApplicationBuilder builder)
         {
-            context.Response.ContentType = "text/html";
-
-            string template = $@"
-             <!DOCTYPE html>
-             <html lang='en'>
-             <head>
-                 <meta charset='utf-8'>
-                 <title>Error</title>
-             </head>
-             <body>
-                 <pre>Cannot POST {context.Request.Path}</pre>
-             </body>
-             </html>";
-
-            await context.Response.WriteAsync(template);
+            return builder.UseMiddleware<NotFoundMiddleware>();
         }
     }
 }

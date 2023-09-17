@@ -4,6 +4,6 @@ namespace TaskAuth.Services
 {
     public interface IRoleService
     {
-        Task<Role> GetRoleByName(string RoleName);
+        Task<Role> GetRoleByName(RoleName RoleName);
     }
 }

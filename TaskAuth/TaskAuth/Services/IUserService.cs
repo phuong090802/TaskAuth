@@ -5,7 +5,7 @@ namespace TaskAuth.Services
 {
     public interface IUserService
     {
-        Task<UserRegister> Register(UserDto request);
+        Task<User> Register(SignupRequest request);
         Task<User?> GetUserByEmail(string Email);
         Task AddRefreshToken(User user);
         Task<User?> GetUserById(Guid id);

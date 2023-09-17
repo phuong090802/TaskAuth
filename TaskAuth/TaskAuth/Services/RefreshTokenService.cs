@@ -14,14 +14,14 @@ namespace TaskAuth.Services
 
         public async Task DeleteChildrenRefreshTokenByParentId(int? Id)
         {
-            var tokens = _context.RefreshTokens.Where(rf => rf.ParentId == Id);
+            var tokens = _context.RefreshTokens.Where(r => r.ParentId == Id);
             _context.RemoveRange(tokens);
             await _context.SaveChangesAsync();
         }
 
         public async Task DisuseChildrenRefreshTokenByParentId(int? Id)
         {
-           _context.RefreshTokens.Where(rf => rf.ParentId == Id).ToList()
+           _context.RefreshTokens.Where(r => r.ParentId == Id).ToList()
                 .ForEach(rf =>
                 {
                     if(rf.IsUsed)
@@ -34,14 +34,13 @@ namespace TaskAuth.Services
 
         public async Task<RefreshToken> GetRefreshTokenById(int? Id)
         {
-            var token = await _context.RefreshTokens.FirstOrDefaultAsync(rf => rf.Id.Equals(Id));
+            var token = await _context.RefreshTokens.FirstOrDefaultAsync(r => r.Id == Id);
             return token!;
         }
 
-        public async Task<RefreshToken> GetRefreshTokenByValue(string? Token)
+        public async Task<RefreshToken?> GetRefreshTokenByValue(string? Token)
         {
-            var token = await _context.RefreshTokens.FirstOrDefaultAsync(rf => rf.Token.Equals(Token));
-            return token!;
+            return await _context.RefreshTokens.FirstOrDefaultAsync(r => r.Token == Token);
         }
 
         public async Task RevokeChildrenRefreshTokenByParentId(int? Id)

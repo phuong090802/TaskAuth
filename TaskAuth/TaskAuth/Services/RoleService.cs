@@ -12,14 +12,13 @@ namespace TaskAuth.Services
             _context = context;
         }
 
-        public async Task<Role> GetRoleByName(string RoleName)
+        public async Task<Role> GetRoleByName(RoleName RoleName)
         {
-            var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName.Equals(RoleName));
-            if (role is null)
-            {
-                return new Role { Id = 1, RoleName = RoleName };
-            }
-            return role;
+            var role = await _context
+                .Roles
+                .FirstOrDefaultAsync(r => r.RoleName.Equals(RoleName));
+            // if role null it will return new Role (user)
+            return role ?? new Role { Id = 1, RoleName = RoleName };
         }
     }
 }

@@ -19,7 +19,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<TaskAuthContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddSingleton<Utils>();
+builder.Services.AddSingleton<JwtUtility>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
@@ -57,8 +57,8 @@ app.UseSwaggerUI();
 //}
 
 app.UseHttpsRedirection();
-app.UseMiddleware<TokenCheckMiddleware>();
-app.UseMiddleware<NotFoundMiddleware>();
+app.UseTokenCheckMiddleware();
+app.UseNotFoundMiddleware();
 app.UseAuthorization();
 
 app.MapControllers();

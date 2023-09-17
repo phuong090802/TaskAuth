@@ -12,21 +12,29 @@ namespace TaskAuth.Entities
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // convert enum to string storeage in database
+            modelBuilder.Entity<Role>()
+                .Property(r => r.RoleName)
+                .HasConversion<string>();
+
+            // parent - children relationship refresh token
             modelBuilder.Entity<RefreshToken>()
-                .HasOne(rt => rt.Parent)
-                .WithMany(m => m.Children)
-                .HasForeignKey(e => e.ParentId)
+                .HasOne(r => r.Parent)
+                .WithMany(r => r.Children)
+                .HasForeignKey(r => r.ParentId)
                 .OnDelete(DeleteBehavior.ClientNoAction);
 
+            // one to one relationship (refresh token - user)
             modelBuilder.Entity<RefreshToken>()
-              .HasOne(u => u.User)
-              .WithOne(u => u.RefreshToken)
-              .HasForeignKey<User>(r => r.RefreshTokenId)
-               .OnDelete(DeleteBehavior.ClientNoAction);
+                .HasOne(r => r.User)
+                .WithOne(r => r.RefreshToken)
+                .HasForeignKey<User>(r => r.RefreshTokenId)
+                .OnDelete(DeleteBehavior.ClientNoAction);
 
+            // one to many relationship (role - user)
             modelBuilder.Entity<Role>()
-                .HasMany(u => u.Users)
-                .WithOne(u => u.Role)
+                .HasMany(r => r.Users)
+                .WithOne(r => r.Role)
                 .HasForeignKey(r => r.RoleId)
                 .OnDelete(DeleteBehavior.ClientNoAction);
         }

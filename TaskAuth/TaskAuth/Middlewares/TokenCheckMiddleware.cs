@@ -2,6 +2,7 @@
 
 namespace TaskAuth.Middlewares
 {
+    // You may need to install the Microsoft.AspNetCore.Http.Abstractions package into your project
     public class TokenCheckMiddleware
     {
         private readonly RequestDelegate _next;
@@ -11,22 +12,30 @@ namespace TaskAuth.Middlewares
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async Task Invoke(HttpContext httpContext)
         {
-            var hasAuthorizeAttribute = context.GetEndpoint()?.Metadata.GetMetadata<AuthorizeAttribute>() != null;
-            if (hasAuthorizeAttribute && !context.User.Identity!.IsAuthenticated)
+            var hasAuthorizeAttribute = httpContext.GetEndpoint()?.Metadata.GetMetadata<AuthorizeAttribute>() != null;
+            if (hasAuthorizeAttribute && !httpContext.User.Identity!.IsAuthenticated)
             {
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsJsonAsync(new
+                httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await httpContext.Response.WriteAsJsonAsync(new
                 {
                     Message = "Không đủ quyền truy cập",
                     Code = -1000,
                     Success = false
                 });
-
                 return;
             }
-            await _next(context);
+            await _next(httpContext);
+        }
+    }
+
+    // Extension method used to add the middleware to the HTTP request pipeline.
+    public static class TokenCheckMiddlewareExtensions
+    {
+        public static IApplicationBuilder UseTokenCheckMiddleware(this IApplicationBuilder builder)
+        {
+            return builder.UseMiddleware<TokenCheckMiddleware>();
         }
     }
 }

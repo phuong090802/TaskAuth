@@ -1,6 +1,6 @@
 ﻿namespace TaskAuth.Models
 {
-    public class UserDto
+    public class SignupRequest
     {
         public required string FullName { get; set; }
         public required string Password { get; set; }
