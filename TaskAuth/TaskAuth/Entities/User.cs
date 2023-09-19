@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
 namespace TaskAuth.Entities
@@ -9,8 +8,9 @@ namespace TaskAuth.Entities
     public class User
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public Guid Id { get; set; }
+        [MaxLength(21)]
+        //[DatabaseGenerated(DatabaseGeneratedOption.Identity)] // it inactive
+        public string Id { get; set; } = null!;
 
         [Required]
         [MaxLength(100)]
@@ -26,11 +26,8 @@ namespace TaskAuth.Entities
 
         public int RoleId { get; set; }
 
-        public int? RefreshTokenId { get; set; }
-
         public Role Role { get; set; } = null!;
-
-        public RefreshToken? RefreshToken { get; set; }
+        public ICollection<RefreshToken> RefreshTokens { get; } = new List<RefreshToken>();
     }
 }
 

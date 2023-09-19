@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TaskAuth.Entities
 {
@@ -9,7 +8,7 @@ namespace TaskAuth.Entities
     public class Role
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        //[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         [Required]
@@ -21,7 +20,7 @@ namespace TaskAuth.Entities
 
     public enum RoleName
     {
-        user,
-        admin
+        User,
+        Admin
     }
 }

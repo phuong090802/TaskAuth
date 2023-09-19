@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using NanoidDotNet;
 using TaskAuth.Entities;
 using TaskAuth.Models;
 
@@ -24,10 +25,10 @@ namespace TaskAuth.Services
 
         public async Task<User> Register(SignupRequest request)
         {
-            var role = await _roleService.GetRoleByName(RoleName.user);
+            var role = await _roleService.GetRoleByName(RoleName.User);
             var user = new User
             {
-                Id = Guid.NewGuid(),
+                Id = Nanoid.Generate(),
                 Email = request.Email,
                 FullName = request.FullName,
                 HashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password),
@@ -45,16 +46,11 @@ namespace TaskAuth.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<User?> GetUserById(Guid id)
+        public async Task<User?> GetUserById(string id)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
             return user;
         }
 
-        public async Task<User?> GetUserByRefreshTokenId(int? id)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshTokenId == id);
-            return user;
-        }
     }
 }

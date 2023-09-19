@@ -6,11 +6,13 @@ namespace TaskAuth.Services
     {
         Task<RefreshToken> SaveRefreshToken(RefreshToken token);
         Task UpdateRefreshToken(RefreshToken token);
-        Task<RefreshToken> GetRefreshTokenById(int? Id);
-        Task DisuseChildrenRefreshTokenByParentId(int? Id);
+        Task<RefreshToken> GetRefreshTokenById(string? Id);
+        Task DisuseChildrenRefreshTokenByParentId(string? Id);
         Task<RefreshToken?> GetRefreshTokenByValue(string? Token);
-        Task RevokeChildrenRefreshTokenByParentId(int? Id);
-        Task DeleteChildrenRefreshTokenByParentId(int? Id);
+        Task RevokeChildrenRefreshTokenByParentId(string? Id);
+        Task DeleteChildrenRefreshTokenByParentId(string Id);
+        Task<RefreshToken?> GetRefreshTokenInBrachIsRevoke(string Id);
+        Task DeleteById(string Id);
 
     }
 }

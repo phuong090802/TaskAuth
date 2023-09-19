@@ -12,7 +12,7 @@ using TaskAuth.Entities;
 namespace TaskAuth.Migrations
 {
     [DbContext(typeof(TaskAuthContext))]
-    [Migration("20230917093758_InitialCreate")]
+    [Migration("20230919075139_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -20,18 +20,16 @@ namespace TaskAuth.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.10")
+                .HasAnnotation("ProductVersion", "7.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("TaskAuth.Entities.RefreshToken", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Id")
+                        .HasMaxLength(21)
+                        .HasColumnType("nvarchar(21)");
 
                     b.Property<DateTime>("IsExpiredAt")
                         .HasColumnType("datetime2");
@@ -45,18 +43,29 @@ namespace TaskAuth.Migrations
                     b.Property<DateTime>("IsUsedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("int");
+                    b.Property<string>("ParentId")
+                        .HasColumnType("nvarchar(21)");
 
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(21)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ParentId");
 
-                    b.ToTable("RefreshTokens");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens", t =>
+                        {
+                            t.HasTrigger("TR_Insert_Update_Delete_ParentAndChildrenWhenChildrendIsExpiredAndIsUsedTrue");
+
+                            t.HasTrigger("TR_Insert_Update_Delete_RefreshTokenIsExpiredAndIsUsedTrue");
+                        });
                 });
 
             modelBuilder.Entity("TaskAuth.Entities.Role", b =>
@@ -82,9 +91,9 @@ namespace TaskAuth.Migrations
 
             modelBuilder.Entity("TaskAuth.Entities.User", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("Id")
+                        .HasMaxLength(21)
+                        .HasColumnType("nvarchar(21)");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -101,9 +110,6 @@ namespace TaskAuth.Migrations
                         .HasMaxLength(62)
                         .HasColumnType("nvarchar(62)");
 
-                    b.Property<int?>("RefreshTokenId")
-                        .HasColumnType("int");
-
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
 
@@ -111,10 +117,6 @@ namespace TaskAuth.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
-
-                    b.HasIndex("RefreshTokenId")
-                        .IsUnique()
-                        .HasFilter("[RefreshTokenId] IS NOT NULL");
 
                     b.HasIndex("RoleId");
 
@@ -128,23 +130,24 @@ namespace TaskAuth.Migrations
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.ClientNoAction);
 
+                    b.HasOne("TaskAuth.Entities.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Parent");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TaskAuth.Entities.User", b =>
                 {
-                    b.HasOne("TaskAuth.Entities.RefreshToken", "RefreshToken")
-                        .WithOne("User")
-                        .HasForeignKey("TaskAuth.Entities.User", "RefreshTokenId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
                     b.HasOne("TaskAuth.Entities.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.ClientNoAction)
                         .IsRequired();
-
-                    b.Navigation("RefreshToken");
 
                     b.Navigation("Role");
                 });
@@ -152,14 +155,16 @@ namespace TaskAuth.Migrations
             modelBuilder.Entity("TaskAuth.Entities.RefreshToken", b =>
                 {
                     b.Navigation("Children");
-
-                    b.Navigation("User")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("TaskAuth.Entities.Role", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("TaskAuth.Entities.User", b =>
+                {
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

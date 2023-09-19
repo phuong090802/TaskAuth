@@ -100,33 +100,31 @@ namespace TaskAuth.Controllers
                     Message = "Email không hợp lệ !"
                 });
             }
+            var user = await _userService.GetUserByEmail(email);
+            if (user is not null)
             {
-                var user = await _userService.GetUserByEmail(email);
-                if (user is not null)
+                return Conflict(new
                 {
-                    return Conflict(new
-                    {
-                        Success = false,
-                        Message = "Email đã có người sử dụng"
-                    });
-                }
-                else
+                    Success = false,
+                    Message = "Email đã có người sử dụng"
+                });
+            }
+            else
+            {
+                var _user = await _userService.Register(request);
+                return Ok(new
                 {
-                    var _user = await _userService.Register(request);
-                    return Ok(new
+                    Success = true,
+                    Code = 0,
+                    Message = "Tạo người dùng thành công",
+                    Data = new
                     {
-                        Success = true,
-                        Code = 0,
-                        Message = "Tạo người dùng thành công",
-                        Data = new
-                        {
-                            Id = _user.Id.ToString(),
-                            Email = _user.Email.ToString(),
-                            FullName = _user.FullName.ToString(),
-                            Role = RoleName.user.ToString()
-                        }
-                    });
-                }
+                        Id = _user.Id.ToString(),
+                        Email = _user.Email.ToString(),
+                        FullName = _user.FullName.ToString(),
+                        Role = RoleName.User.ToString().ToLower()
+                    }
+                });
             }
         }
 
@@ -145,43 +143,24 @@ namespace TaskAuth.Controllers
                     });
                 }
                 // generate accessToken
+
                 string token = _utils.GenerateToken(user);
 
                 // create refreshToken
                 var refreshToken = _utils.GenerateRefreshToken();
 
-                // create new refresh token and update user with new refresh token
-                if (user.RefreshTokenId is null)
-                {
-                    var _refreshToken = await _refreshTokenService.SaveRefreshToken(refreshToken);
+                // create new refresh token and set userId for refresh token after 
+                refreshToken.User = user;
+                await _refreshTokenService.SaveRefreshToken(refreshToken);
 
-                    user.RefreshTokenId = _refreshToken.Id;
-                    await _userService.AddRefreshToken(user);
-                }
-                // user have refresh token and update refresh token data
-                else
-                {
-                    // update refreshToken
-                    var _refreshToken = await _refreshTokenService.GetRefreshTokenById(user.RefreshTokenId);
-                    _refreshToken.Token = refreshToken.Token;
-                    _refreshToken.IsUsedAt = refreshToken.IsUsedAt;
-                    _refreshToken.IsExpiredAt = refreshToken.IsExpiredAt;
-                    _refreshToken.IsRevoke = refreshToken.IsRevoke;
-                    _refreshToken.IsUsed = refreshToken.IsUsed;
-                    await _refreshTokenService.UpdateRefreshToken(_refreshToken);
-
-                    // delete old childenToken
-                    await _refreshTokenService.DeleteChildrenRefreshTokenByParentId(user.RefreshTokenId);
-                }
-
-                // set coookies
+                //set coookies
                 Response.Cookies.Append("refreshToken", refreshToken.Token, new CookieOptions
                 {
                     HttpOnly = true,
                     Expires = refreshToken.IsExpiredAt
                 });
 
-                string roleName = user.RoleId == 1 ? RoleName.user.ToString() : RoleName.admin.ToString();
+                string roleName = user.RoleId == 1 ? RoleName.User.ToString() : RoleName.Admin.ToString();
                 return Ok(new
                 {
                     Success = true,
@@ -191,7 +170,7 @@ namespace TaskAuth.Controllers
                     {
                         Id = user.Id.ToString(),
                         Email = user.Email.ToString(),
-                        Role = roleName,
+                        Role = roleName.ToLower(),
                         Token = token
                     }
                 });
@@ -218,43 +197,34 @@ namespace TaskAuth.Controllers
             }
             // get refreshToken from cookies
             var refreshToken = Request.Cookies["refreshToken"];
-
             // get from database find by Token (value)
             var _refreshToken = await _refreshTokenService.GetRefreshTokenByValue(refreshToken);
-            // is valid refresh token
+            // if exists refresh token
             if (_refreshToken is not null)
             {
-                if (_refreshToken.IsExpiredAt > DateTime.Now)
+                if (_refreshToken.IsUsed)
                 {
-                    if (!_refreshToken.IsRevoke && _refreshToken.IsUsed)
+                    if (_refreshToken.IsExpiredAt > DateTime.Now)
                     {
-                        var user = await _userService.GetUserByRefreshTokenId(_refreshToken.Id) ?? await _userService.GetUserByRefreshTokenId(_refreshToken.ParentId);
-                        // Is Parent, because User refference to RefreshToken 
+                        // find user by userId in refresh token
+                        var user = await _userService.GetUserById(_refreshToken.UserId);
                         if (user is not null)
                         {
-                            string roleName = user.RoleId == 1 ? RoleName.user.ToString() : RoleName.admin.ToString();
-
+                            string roleName = user.RoleId == 1 ? RoleName.User.ToString() : RoleName.Admin.ToString();
                             string token = _utils.GenerateToken(user);
-                            // add children-refreshToken
-
                             var newRefreshToken = _utils.GenerateRefreshToken();
-
-                            int parentId = _refreshToken.ParentId ?? _refreshToken.Id;
-
+                            newRefreshToken.UserId = user.Id;
+                            // set parentId for newRefreshToken
+                            string parentId = _refreshToken.ParentId ?? _refreshToken.Id;
                             newRefreshToken.ParentId = parentId;
-
-                            await _refreshTokenService.SaveRefreshToken(newRefreshToken);
-
                             _refreshToken.IsUsed = false;
-
                             await _refreshTokenService.UpdateRefreshToken(_refreshToken);
-
+                            await _refreshTokenService.SaveRefreshToken(newRefreshToken);
                             Response.Cookies.Append("refreshToken", newRefreshToken.Token, new CookieOptions
                             {
                                 HttpOnly = true,
-                                Expires = _refreshToken.IsExpiredAt
+                                Expires = newRefreshToken.IsExpiredAt
                             });
-
                             return Ok(new
                             {
                                 Success = true,
@@ -269,15 +239,64 @@ namespace TaskAuth.Controllers
                             });
                         }
                     }
-                    else if (!_refreshToken.IsRevoke && !_refreshToken.IsUsed)
-                    {
-                        await _refreshTokenService.RevokeChildrenRefreshTokenByParentId(_refreshToken.ParentId);
-                    }
                 }
+                // if it isUsed = false
+                else
+                {
+                    string parentId = _refreshToken.ParentId ?? _refreshToken.Id;
+                    if (!_refreshToken.IsRevoke)
+                    {
+                        var tokenIsRevoked = await _refreshTokenService.GetRefreshTokenInBrachIsRevoke(parentId);
+                        if (tokenIsRevoked is not null)
+                        {
+                            await _refreshTokenService.DeleteChildrenRefreshTokenByParentId(parentId);
+                            // delete parent
+                            await _refreshTokenService.DeleteById(parentId);
+                            Response.Cookies.Delete("refreshToken", new CookieOptions
+                            {
+                                HttpOnly = true,
+                            });
+                            return Unauthorized(new
+                            {
+                                Message = "Không đủ quyền truy cập",
+                                Code = 4011,
+                                Success = false
+                            });
+                        }
+                        else
+                        {
+                            // update isRevoke = true
+                            _refreshToken.IsRevoke = true;
+                            await _refreshTokenService.UpdateRefreshToken(_refreshToken);
+                            return Unauthorized(new
+                            {
+                                Message = "Không đủ quyền truy cập- old-rt",
+                                Code = 4013,
+                                Success = false
+                            });
+                        }
+                    }
+                    else
+                    {
+                        // delete all child
+                        await _refreshTokenService.DeleteChildrenRefreshTokenByParentId(parentId);
+                        // delete parent
+                        await _refreshTokenService.DeleteById(parentId);
+                        Response.Cookies.Delete("refreshToken", new CookieOptions
+                        {
+                            HttpOnly = true,
+                        });
+                        return Unauthorized(new
+                        {
+                            Message = "Không đủ quyền truy cập",
+                            Code = 4011,
+                            Success = false
+                        });
+                    }
 
+                }
             }
-            // invalid refreh token
-            // refreshToken exists or not exists
+            // refreshToken not exists
             // send response remove cookie to client
             Response.Cookies.Delete("refreshToken", new CookieOptions
             {
@@ -293,32 +312,52 @@ namespace TaskAuth.Controllers
 
         private async Task<IActionResult> LogoutHandle()
         {
+            // get token from cookies
             var refreshToken = Request.Cookies["refreshToken"];
             // get from database find by Token (value)
             var _refreshToken = await _refreshTokenService.GetRefreshTokenByValue(refreshToken);
-            // if refresh token existing
+            // if refresh token exists in database
             if (_refreshToken is not null)
             {
-                // if refresh token is Used
+                // if it isUsed
                 if (_refreshToken.IsUsed)
                 {
-                    var updateRefreshToken = _refreshToken;
-                    // set is used = false, update refresh token
-                    updateRefreshToken.IsUsed = false;
-                    await _refreshTokenService.UpdateRefreshToken(updateRefreshToken);
-                    // is children
+                    // if it have parent
                     if (_refreshToken.ParentId is not null)
                     {
-                        return Ok(new
-                        {
-                            Success = true,
-                            Code = 200,
-                            Message = "ok"
-                        });
+                        string parentId = _refreshToken.ParentId;
+                        await _refreshTokenService.DeleteChildrenRefreshTokenByParentId(parentId);
+                        await _refreshTokenService.DeleteById(parentId);
                     }
-                    // is parent
+                    // if it is parent -> it don't have children
                     else
                     {
+                        await _refreshTokenService.DeleteById(_refreshToken.Id);
+                    }
+                    // delete cookies
+                    Response.Cookies.Delete("refreshToken", new CookieOptions
+                    {
+                        HttpOnly = true,
+                    });
+                    return Ok(new
+                    {
+                        Success = true,
+                        Code = 200,
+                        Message = "ok"
+                    });
+                }
+                else
+                {
+                    // không nên xóa cái bị revoke vì nó là cái để đánh dấu cho kiểm tra refresh
+                    // delete token isUsed = false if it not is parent
+                    // isRevoke = false, isUsed = false and it is child -> remove it
+                    if(!_refreshToken.IsRevoke && _refreshToken.ParentId is not null)
+                    {
+                        await _refreshTokenService.DeleteById(_refreshToken.Id);
+                        Response.Cookies.Delete("refreshToken", new CookieOptions
+                        {
+                            HttpOnly = true,
+                        });
                         return Ok(new
                         {
                             Success = false,
@@ -326,10 +365,11 @@ namespace TaskAuth.Controllers
                             Message = "ok"
                         });
                     }
+                    // if revoke = true doing nothing
+                    
                 }
             }
-            // refreshToken exists or not exists
-            // send response remove cookie to client
+            // if not exist send response remove cookie to client
             Response.Cookies.Delete("refreshToken", new CookieOptions
             {
                 HttpOnly = true,
@@ -337,7 +377,7 @@ namespace TaskAuth.Controllers
             return Ok(new { Success = true });
         }
 
-        // check auth
+        // test auth
         private IActionResult HandleTest()
         {
             var httpContext = _httpContextAccessor.HttpContext;
@@ -345,7 +385,7 @@ namespace TaskAuth.Controllers
             if (httpContext is not null)
             {
                 var id = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-                var user = _userService.GetUserById(Guid.Parse(id));
+                var user = _userService.GetUserById(id);
                 if (user is not null)
                 {
                     return Ok(new

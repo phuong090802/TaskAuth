@@ -1,4 +1,5 @@
 ﻿using Microsoft.IdentityModel.Tokens;
+using NanoidDotNet;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -18,13 +19,9 @@ namespace TaskAuth.Helpers
 
         public string GenerateToken(User user)
         {
-            string roleName = user.RoleId == 1 ? RoleName.user.ToString() : RoleName.admin.ToString();
             List<Claim> claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(ClaimTypes.Role, roleName),
+                new Claim(ClaimTypes.NameIdentifier, user.Id)
             };
 
             var key = new SymmetricSecurityKey(
@@ -50,7 +47,7 @@ namespace TaskAuth.Helpers
         {
             var refreshToken = new RefreshToken
             {
-                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                Token = Nanoid.Generate(),
                 IsUsedAt = DateTime.Now,
                 IsExpiredAt = DateTime.Now.AddDays(7),
                 IsRevoke = false,

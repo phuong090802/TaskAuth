@@ -1,0 +1,1 @@
+INSERT INTO Roles (RoleName) VALUES ('User'), ('Admin');

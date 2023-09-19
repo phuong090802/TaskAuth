@@ -6,7 +6,8 @@ namespace TaskAuth.Entities
     public class RefreshToken
     {
         [Key]
-        public int Id { get; set; }
+        [MaxLength(21)]
+        public string Id { get; set; } = null!;
         [Required]
         [MaxLength]
         public string Token { get; set; } = null!;
@@ -18,8 +19,10 @@ namespace TaskAuth.Entities
         public bool IsRevoke { get; set; } = false;
         [Required]
         public bool IsUsed { get; set; } = true;
-        public int? ParentId { get; set; }
+        public string UserId { get; set; } = null!;
         public User User { get; set; } = null!;
+
+        public string? ParentId { get; set; }
         public RefreshToken? Parent { get; set; }
         public ICollection<RefreshToken> Children { get; } = new List<RefreshToken>();
     }

@@ -24,12 +24,12 @@ namespace TaskAuth.Entities
                 .HasForeignKey(r => r.ParentId)
                 .OnDelete(DeleteBehavior.ClientNoAction);
 
-            // one to one relationship (refresh token - user)
-            modelBuilder.Entity<RefreshToken>()
-                .HasOne(r => r.User)
-                .WithOne(r => r.RefreshToken)
-                .HasForeignKey<User>(r => r.RefreshTokenId)
-                .OnDelete(DeleteBehavior.ClientNoAction);
+            // one to many relationship (user - refresh token)
+            modelBuilder.Entity<User>()
+                .HasMany(r => r.RefreshTokens)
+                .WithOne(r => r.User)
+                .HasForeignKey(r => r.UserId);
+
 
             // one to many relationship (role - user)
             modelBuilder.Entity<Role>()
@@ -37,6 +37,12 @@ namespace TaskAuth.Entities
                 .WithOne(r => r.Role)
                 .HasForeignKey(r => r.RoleId)
                 .OnDelete(DeleteBehavior.ClientNoAction);
+
+            modelBuilder.Entity<RefreshToken>()
+                .ToTable(tb => tb.HasTrigger("TR_Insert_Update_Delete_ParentAndChildrenWhenChildrendIsExpiredAndIsUsedTrue"));
+
+            modelBuilder.Entity<RefreshToken>()
+                .ToTable(tb => tb.HasTrigger("TR_Insert_Update_Delete_RefreshTokenIsExpiredAndIsUsedTrue"));
         }
     }
 }

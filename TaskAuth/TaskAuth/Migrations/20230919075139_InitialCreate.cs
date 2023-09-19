@@ -12,29 +12,6 @@ namespace TaskAuth.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "RefreshTokens",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Token = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsUsedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsExpiredAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsRevoke = table.Column<bool>(type: "bit", nullable: false),
-                    IsUsed = table.Column<bool>(type: "bit", nullable: false),
-                    ParentId = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_RefreshTokens_RefreshTokens_ParentId",
-                        column: x => x.ParentId,
-                        principalTable: "RefreshTokens",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
                 {
@@ -51,21 +28,15 @@ namespace TaskAuth.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Id = table.Column<string>(type: "nvarchar(21)", maxLength: 21, nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(254)", maxLength: 254, nullable: false),
                     HashedPassword = table.Column<string>(type: "nvarchar(62)", maxLength: 62, nullable: false),
-                    RoleId = table.Column<int>(type: "int", nullable: false),
-                    RefreshTokenId = table.Column<int>(type: "int", nullable: true)
+                    RoleId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Users_RefreshTokens_RefreshTokenId",
-                        column: x => x.RefreshTokenId,
-                        principalTable: "RefreshTokens",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Users_Roles_RoleId",
                         column: x => x.RoleId,
@@ -73,10 +44,44 @@ namespace TaskAuth.Migrations
                         principalColumn: "Id");
                 });
 
+            migrationBuilder.CreateTable(
+                name: "RefreshTokens",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(21)", maxLength: 21, nullable: false),
+                    Token = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsUsedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsExpiredAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsRevoke = table.Column<bool>(type: "bit", nullable: false),
+                    IsUsed = table.Column<bool>(type: "bit", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(21)", nullable: false),
+                    ParentId = table.Column<string>(type: "nvarchar(21)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RefreshTokens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RefreshTokens_RefreshTokens_ParentId",
+                        column: x => x.ParentId,
+                        principalTable: "RefreshTokens",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_RefreshTokens_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_ParentId",
                 table: "RefreshTokens",
                 column: "ParentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_UserId",
+                table: "RefreshTokens",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Roles_RoleName",
@@ -91,13 +96,6 @@ namespace TaskAuth.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_RefreshTokenId",
-                table: "Users",
-                column: "RefreshTokenId",
-                unique: true,
-                filter: "[RefreshTokenId] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Users_RoleId",
                 table: "Users",
                 column: "RoleId");
@@ -107,10 +105,10 @@ namespace TaskAuth.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "RefreshTokens");
 
             migrationBuilder.DropTable(
-                name: "RefreshTokens");
+                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Roles");
