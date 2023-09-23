@@ -40,12 +40,6 @@ namespace TaskAuth.Services
 
         }
 
-        public async Task AddRefreshToken(User user)
-        {
-            _context.Update(user);
-            await _context.SaveChangesAsync();
-        }
-
         public async Task<User?> GetUserById(string id)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);

@@ -24,45 +24,31 @@ namespace TaskAuth.Migrations
 
             modelBuilder.Entity("TaskAuth.Entities.RefreshToken", b =>
                 {
-                    b.Property<string>("Id")
+                    b.Property<string>("Token")
                         .HasMaxLength(21)
                         .HasColumnType("nvarchar(21)");
 
                     b.Property<DateTime>("IsExpiredAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsRevoke")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsUsed")
                         .HasColumnType("bit");
 
-                    b.Property<DateTime>("IsUsedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ParentId")
+                    b.Property<string>("ParentToken")
+                        .HasMaxLength(21)
                         .HasColumnType("nvarchar(21)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(21)");
 
-                    b.HasKey("Id");
+                    b.HasKey("Token");
 
-                    b.HasIndex("ParentId");
+                    b.HasIndex("ParentToken");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", t =>
-                        {
-                            t.HasTrigger("TR_Insert_Update_Delete_ParentAndChildrenWhenChildrendIsExpiredAndIsUsedTrue");
-
-                            t.HasTrigger("TR_Insert_Update_Delete_RefreshTokenIsExpiredAndIsUsedTrue");
-                        });
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("TaskAuth.Entities.Role", b =>
@@ -124,7 +110,7 @@ namespace TaskAuth.Migrations
                 {
                     b.HasOne("TaskAuth.Entities.RefreshToken", "Parent")
                         .WithMany("Children")
-                        .HasForeignKey("ParentId")
+                        .HasForeignKey("ParentToken")
                         .OnDelete(DeleteBehavior.ClientNoAction);
 
                     b.HasOne("TaskAuth.Entities.User", "User")

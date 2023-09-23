@@ -13,24 +13,28 @@
         public async Task Invoke(HttpContext httpContext)
         {
             await _next(httpContext);
-            if (httpContext.Response.StatusCode == 405)
+
+            if ((httpContext.Response.StatusCode == 404 || httpContext.Response.StatusCode == 405) &&
+                !httpContext.Response.HasStarted)
             {
+                httpContext.Response.Clear();
+
                 httpContext.Response.ContentType = "text/html";
 
                 string template = $@"
-                 <!DOCTYPE html>
-                 <html lang='en'>
-                 <head>
-                     <meta charset='utf-8'>
-                     <title>Error</title>
-                 </head>
-                 <body>
-                     <pre>Cannot POST {httpContext.Request.Path}</pre>
-                 </body>
-                 </html>";
+                <!DOCTYPE html>
+                <html lang='en'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>Error</title>
+                </head>
+                <body>
+                    <pre>Cannot {httpContext.Request.Method} {httpContext.Request.Path}</pre>
+                </body>
+                </html>";
+
                 await httpContext.Response.WriteAsync(template);
             }
-
         }
 
     }

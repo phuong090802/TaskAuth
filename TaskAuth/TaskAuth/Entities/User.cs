@@ -24,9 +24,12 @@ namespace TaskAuth.Entities
         [MaxLength(62)]
         public string HashedPassword { get; set; } = null!;
 
+        [Required]
         public int RoleId { get; set; }
 
+        [Required]
         public Role Role { get; set; } = null!;
+
         public ICollection<RefreshToken> RefreshTokens { get; } = new List<RefreshToken>();
     }
 }

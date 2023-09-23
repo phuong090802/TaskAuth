@@ -1,0 +1,8 @@
+TaskAuth/obj
+TaskAuth/Properties
+TaskAuth/appsettings.json
+TaskAuth/.config
+TaskAuth/bin
+TaskAuth/TaskAuth.csproj.user
+TaskAuth/TaskAuth.csproj
+TaskAuth/appsettings.Development.json

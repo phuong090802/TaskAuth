@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using NanoidDotNet;
 using TaskAuth.Entities;
 
 namespace TaskAuth.Services
@@ -13,68 +12,30 @@ namespace TaskAuth.Services
             _context = context;
         }
 
-        public async Task DeleteById(string Id)
+        public async Task DeleteByToken(string token)
         {
-            var token = await _context.RefreshTokens.FirstOrDefaultAsync(r => r.Id == Id);
+            var refreshToken = await _context.RefreshTokens.FirstOrDefaultAsync(r => r.Token == token);
             if (token is not null)
             {
-                _context.RefreshTokens.Remove(token);
+                _context.RefreshTokens.Remove(refreshToken!);
                 await _context.SaveChangesAsync();
             }
         }
 
-        public async Task DeleteChildrenRefreshTokenByParentId(string Id)
+        public async Task DeleteChildrenRefreshTokenByParentToken(string token)
         {
-            var tokens = _context.RefreshTokens.Where(r => r.ParentId == Id);
+            var tokens = _context.RefreshTokens.Where(r => r.ParentToken == token);
             _context.RemoveRange(tokens);
             await _context.SaveChangesAsync();
         }
 
-        public async Task DisuseChildrenRefreshTokenByParentId(string? Id)
-        {
-            _context.RefreshTokens.Where(r => r.ParentId == Id).ToList()
-                 .ForEach(rf =>
-                 {
-                     if (rf.IsUsed)
-                     {
-                         rf.IsUsed = false;
-                     }
-                 });
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<RefreshToken> GetRefreshTokenById(string? Id)
-        {
-            var token = await _context.RefreshTokens.FirstOrDefaultAsync(r => r.Id == Id);
-            return token!;
-        }
-
-        public async Task<RefreshToken?> GetRefreshTokenByValue(string? Token)
+        public async Task<RefreshToken?> GetRefreshTokenByToken(string? Token)
         {
             return await _context.RefreshTokens.FirstOrDefaultAsync(r => r.Token == Token);
         }
 
-        public async Task<RefreshToken?> GetRefreshTokenInBrachIsRevoke(string Id)
-        {
-            return await _context.RefreshTokens.FirstOrDefaultAsync(r => r.ParentId == Id && r.IsRevoke);
-        }
-
-        public async Task RevokeChildrenRefreshTokenByParentId(string? Id)
-        {
-            _context.RefreshTokens.Where(rf => rf.ParentId == Id).ToList()
-               .ForEach(rf =>
-               {
-                   if (!rf.IsRevoke)
-                   {
-                       rf.IsRevoke = true;
-                   }
-               });
-            await _context.SaveChangesAsync();
-        }
-
         public async Task<RefreshToken> SaveRefreshToken(RefreshToken token)
         {
-            token.Id = Nanoid.Generate();
             _context.RefreshTokens.Add(token);
             await _context.SaveChangesAsync();
             var rereshToken = _context.RefreshTokens.Entry(token).Entity;

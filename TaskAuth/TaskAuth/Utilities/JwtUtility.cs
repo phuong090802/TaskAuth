@@ -48,9 +48,8 @@ namespace TaskAuth.Helpers
             var refreshToken = new RefreshToken
             {
                 Token = Nanoid.Generate(),
-                IsUsedAt = DateTime.Now,
                 IsExpiredAt = DateTime.Now.AddDays(7),
-                IsRevoke = false,
+                //IsExpiredAt = DateTime.Now.AddMinutes(10),
                 IsUsed = true
             };
             return refreshToken;
